@@ -1,2 +1,1 @@
-# fa1u
-Created by aatrocy for the YouTuber fa1u
+Hello, I made this so I can host it onto my website.
