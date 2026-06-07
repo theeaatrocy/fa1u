@@ -1,0 +1,809 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FA1U</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
+
+  :root {
+    --pixel-green: #4cff4c;
+    --pixel-red: #cc2200;
+    --pixel-dark-red: #881100;
+    --pixel-brown: #8B4513;
+    --pixel-cream: #f5deb3;
+    --neon-green: #39ff14;
+    --gold: #ffd700;
+    --deep-black: #050505;
+    --shadow-red: #ff1a00;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; image-rendering: pixelated; }
+
+  body {
+    background: var(--deep-black);
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-family: 'Press Start 2P', monospace;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Crect x='6' y='0' width='4' height='4' fill='%234cff4c'/%3E%3Crect x='4' y='4' width='8' height='4' fill='%234cff4c'/%3E%3Crect x='0' y='8' width='16' height='4' fill='%234cff4c'/%3E%3Crect x='4' y='12' width='8' height='4' fill='%234cff4c'/%3E%3C/svg%3E"), crosshair;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    z-index: 9999;
+  }
+
+  /* STAR FIELD BACKGROUND */
+  #starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .star {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: var(--pixel-green);
+    animation: twinkle var(--t) infinite;
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.1; transform: scale(0.5); }
+  }
+
+  /* MAIN CONTAINER */
+  .scene {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 10px 60px;
+    min-height: 100vh;
+  }
+
+  /* TITLE */
+  .title-wrap {
+    text-align: center;
+    margin-bottom: 8px;
+    animation: titleDrop 0.6s steps(1) forwards;
+    opacity: 0;
+  }
+  @keyframes titleDrop {
+    0% { opacity: 0; transform: translateY(-40px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .title-main {
+    font-size: clamp(28px, 7vw, 64px);
+    color: var(--pixel-green);
+    text-shadow:
+      4px 4px 0 var(--pixel-dark-red),
+      8px 8px 0 #000,
+      0 0 30px var(--neon-green),
+      0 0 60px var(--neon-green);
+    letter-spacing: 4px;
+    animation: glitch 3s infinite;
+    display: block;
+    line-height: 1.3;
+  }
+
+  @keyframes glitch {
+    0%, 90%, 100% { text-shadow: 4px 4px 0 var(--pixel-dark-red), 8px 8px 0 #000, 0 0 30px var(--neon-green); clip-path: none; }
+    91% { clip-path: inset(20% 0 60% 0); transform: translate(-4px, 0); color: #ff1a00; }
+    92% { clip-path: inset(60% 0 10% 0); transform: translate(4px, 0); color: var(--neon-green); }
+    93% { clip-path: none; transform: translate(0); color: var(--pixel-green); }
+  }
+
+  .title-sub {
+    font-family: 'VT323', monospace;
+    font-size: clamp(14px, 3.5vw, 28px);
+    color: var(--gold);
+    letter-spacing: 3px;
+    margin-top: 6px;
+    text-shadow: 0 0 10px var(--gold), 2px 2px 0 #8B6914;
+    display: block;
+  }
+
+  /* PIXEL ART CANVAS - MAIN CHARACTER */
+  .artwork-container {
+    position: relative;
+    margin: 10px 0;
+    animation: floatArt 4s ease-in-out infinite;
+  }
+
+  @keyframes floatArt {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .pixel-canvas {
+    display: grid;
+    image-rendering: pixelated;
+  }
+
+  /* FA1U PIXEL CHARACTER - big canvas */
+  #fa1uCanvas {
+    width: clamp(240px, 60vw, 400px);
+    height: clamp(240px, 60vw, 400px);
+  }
+
+  /* SUBSCRIBE BANNER */
+  .sub-banner {
+    background: var(--pixel-green);
+    border: 6px solid #000;
+    box-shadow:
+      6px 6px 0 #000,
+      inset -4px -4px 0 rgba(0,0,0,0.2),
+      0 0 40px var(--neon-green);
+    padding: 14px 24px;
+    margin: 10px 0;
+    position: relative;
+    overflow: hidden;
+    max-width: 600px;
+    width: 95%;
+    animation: bannerIn 0.8s steps(1) 0.4s both;
+    opacity: 0;
+  }
+
+  @keyframes bannerIn {
+    0% { opacity: 0; transform: scaleX(0); }
+    100% { opacity: 1; transform: scaleX(1); }
+  }
+
+  .sub-text {
+    font-size: clamp(18px, 5vw, 36px);
+    color: var(--pixel-red);
+    text-shadow: 3px 3px 0 var(--pixel-dark-red), 5px 5px 0 #000;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .sub-highlight {
+    color: #000;
+    background: var(--pixel-red);
+    padding: 2px 8px;
+    display: inline-block;
+  }
+
+  .marquee-wrap {
+    overflow: hidden;
+    white-space: nowrap;
+    margin-top: 6px;
+  }
+
+  .marquee-inner {
+    display: inline-block;
+    animation: marquee 10s linear infinite;
+    font-family: 'VT323', monospace;
+    font-size: clamp(12px, 3vw, 20px);
+    color: #000;
+    letter-spacing: 2px;
+  }
+  @keyframes marquee {
+    0% { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* STATS CARDS */
+  .stats-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 10px 0;
+    max-width: 600px;
+    width: 95%;
+  }
+
+  .stat-card {
+    background: #0a0a0a;
+    border: 4px solid var(--pixel-green);
+    box-shadow: 4px 4px 0 var(--pixel-green);
+    padding: 10px 14px;
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+    animation: cardPop 0.4s steps(2) both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(76,255,76,0.1), transparent);
+    animation: cardShine 3s infinite;
+  }
+
+  @keyframes cardShine {
+    0% { left: -100%; }
+    100% { left: 200%; }
+  }
+
+  @keyframes cardPop {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  .stat-card:nth-child(1) { animation-delay: 0.6s; opacity: 0; animation-fill-mode: forwards; }
+  .stat-card:nth-child(2) { animation-delay: 0.8s; opacity: 0; animation-fill-mode: forwards; }
+  .stat-card:nth-child(3) { animation-delay: 1.0s; opacity: 0; animation-fill-mode: forwards; }
+
+  .stat-label {
+    font-size: clamp(6px, 1.5vw, 9px);
+    color: var(--pixel-green);
+    margin-bottom: 6px;
+    text-shadow: 0 0 8px var(--neon-green);
+  }
+
+  .stat-val {
+    font-family: 'VT323', monospace;
+    font-size: clamp(22px, 5vw, 36px);
+    color: var(--gold);
+    text-shadow: 2px 2px 0 #8B6914, 0 0 15px var(--gold);
+  }
+
+  /* QUOTE SECTION */
+  .quote-box {
+    border: 4px solid;
+    border-image: repeating-linear-gradient(90deg, var(--pixel-green) 0, var(--pixel-green) 8px, transparent 8px, transparent 16px) 4;
+    padding: 14px 20px;
+    max-width: 560px;
+    width: 95%;
+    margin: 10px 0;
+    text-align: center;
+    position: relative;
+    animation: fadeUp 0.6s steps(1) 1.2s both;
+    opacity: 0;
+  }
+
+  @keyframes fadeUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .quote-text {
+    font-family: 'VT323', monospace;
+    font-size: clamp(18px, 4vw, 28px);
+    color: #fff;
+    line-height: 1.5;
+    letter-spacing: 1px;
+  }
+
+  .quote-text .highlight {
+    color: var(--pixel-green);
+    text-shadow: 0 0 10px var(--neon-green);
+  }
+
+  .quote-attr {
+    font-size: clamp(6px, 1.5vw, 10px);
+    color: #555;
+    margin-top: 8px;
+    letter-spacing: 2px;
+  }
+
+  /* POKEBALL DECORATIONS */
+  .deco-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    align-items: center;
+    margin: 8px 0;
+    animation: fadeUp 0.4s steps(1) 1.4s both;
+    opacity: 0;
+  }
+
+  .pixel-ball {
+    width: 32px;
+    height: 32px;
+    image-rendering: pixelated;
+    animation: spin 6s linear infinite;
+    filter: drop-shadow(0 0 8px var(--neon-green));
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* EXPERIENCE BAR */
+  .xp-section {
+    max-width: 560px;
+    width: 95%;
+    margin: 6px 0 10px;
+    animation: fadeUp 0.4s steps(1) 1.5s both;
+    opacity: 0;
+  }
+
+  .xp-label {
+    font-size: clamp(7px, 1.5vw, 10px);
+    color: var(--pixel-green);
+    margin-bottom: 6px;
+    letter-spacing: 2px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .xp-track {
+    background: #0a0a0a;
+    border: 4px solid var(--pixel-green);
+    height: 20px;
+    position: relative;
+    box-shadow: 0 0 10px var(--neon-green);
+  }
+
+  .xp-fill {
+    background: repeating-linear-gradient(
+      90deg,
+      var(--pixel-green) 0,
+      var(--pixel-green) 8px,
+      var(--neon-green) 8px,
+      var(--neon-green) 16px
+    );
+    height: 100%;
+    width: 0%;
+    animation: xpGrow 2s steps(20) 2s forwards;
+    box-shadow: inset 0 0 10px rgba(255,255,255,0.3);
+  }
+
+  @keyframes xpGrow {
+    to { width: 73%; }
+  }
+
+  /* BOTTOM BADGE */
+  .badge-container {
+    position: relative;
+    margin: 14px 0;
+    animation: badgePop 0.5s steps(2) 1.8s both;
+    opacity: 0;
+  }
+
+  @keyframes badgePop {
+    0% { opacity: 0; transform: scale(0) rotate(-20deg); }
+    60% { transform: scale(1.15) rotate(5deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+
+  .badge {
+    background: var(--pixel-red);
+    border: 5px solid #000;
+    box-shadow: 5px 5px 0 #000, 0 0 30px var(--shadow-red);
+    padding: 12px 28px;
+    color: #fff;
+    font-size: clamp(8px, 2vw, 13px);
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 0 #000;
+    position: relative;
+    text-align: center;
+  }
+
+  .badge::before, .badge::after {
+    content: '★';
+    color: var(--gold);
+    text-shadow: 0 0 10px var(--gold);
+    margin: 0 8px;
+  }
+
+  /* PIXEL GROOKEY decoration - CSS-drawn */
+  .grookey-art {
+    image-rendering: pixelated;
+    width: clamp(80px, 20vw, 120px);
+    height: clamp(80px, 20vw, 120px);
+    margin: 0 auto;
+    display: block;
+    animation: floatArt 3s ease-in-out 1s infinite;
+    filter: drop-shadow(0 0 16px var(--neon-green)) drop-shadow(4px 4px 0 rgba(0,0,0,0.8));
+  }
+
+  /* FOOTER */
+  .footer {
+    font-family: 'VT323', monospace;
+    font-size: clamp(10px, 2.5vw, 16px);
+    color: #333;
+    letter-spacing: 2px;
+    margin-top: 20px;
+    text-align: center;
+    animation: fadeUp 0.4s steps(1) 2.2s both;
+    opacity: 0;
+  }
+
+  .footer span {
+    color: var(--pixel-green);
+    text-shadow: 0 0 6px var(--neon-green);
+  }
+
+  /* CORNER DECORATIONS */
+  .corner {
+    position: fixed;
+    width: 48px;
+    height: 48px;
+    z-index: 2;
+  }
+  .corner-tl { top: 8px; left: 8px; border-top: 4px solid var(--pixel-green); border-left: 4px solid var(--pixel-green); }
+  .corner-tr { top: 8px; right: 8px; border-top: 4px solid var(--pixel-green); border-right: 4px solid var(--pixel-green); }
+  .corner-bl { bottom: 8px; left: 8px; border-bottom: 4px solid var(--pixel-green); border-left: 4px solid var(--pixel-green); }
+  .corner-br { bottom: 8px; right: 8px; border-bottom: 4px solid var(--pixel-green); border-right: 4px solid var(--pixel-green); }
+
+  /* HIT EFFECT */
+  .hit-effect {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    color: var(--gold);
+    text-shadow: 2px 2px 0 #000;
+    animation: hitFade 0.8s steps(4) forwards;
+  }
+  @keyframes hitFade {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-60px) scale(1.5); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Corner UI elements -->
+<div class="corner corner-tl"></div>
+<div class="corner corner-tr"></div>
+<div class="corner corner-bl"></div>
+<div class="corner corner-br"></div>
+
+<!-- Star field -->
+<div id="starfield"></div>
+
+<div class="scene">
+
+  <!-- TITLE -->
+  <div class="title-wrap" style="animation-delay:0s;opacity:0;animation-fill-mode:forwards;">
+    <span class="title-main">FA1U</span>
+    <span class="title-sub">⚔ LEVEL 100 CONTENT CREATOR ⚔</span>
+  </div>
+
+  <!-- MAIN CHARACTER ART -->
+  <div class="artwork-container">
+    <canvas id="fa1uCanvas" width="64" height="64" style="width:clamp(240px,60vw,400px);height:clamp(240px,60vw,400px);"></canvas>
+  </div>
+
+  <!-- SUBSCRIBE BANNER -->
+  <div class="sub-banner">
+    <div class="sub-text">
+      SUBS<span class="sub-highlight">C</span>R1BE
+      <span style="color:#000;font-size:0.6em;font-family:'VT323',monospace;letter-spacing:1px;">NOW</span>
+    </div>
+    <div class="marquee-wrap">
+      <span class="marquee-inner">
+        @FA1U &nbsp;★&nbsp; 3.41K SUBS &nbsp;★&nbsp; 17 VIDEOS &nbsp;★&nbsp; GROOKEY GANG &nbsp;★&nbsp; DISCORD LINKED &nbsp;★&nbsp; @FA1U &nbsp;★&nbsp; THE GOAT &nbsp;★&nbsp; SUBSCRIBE OR ELSE &nbsp;★&nbsp;
+      </span>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">SUBSCRIBERS</div>
+      <div class="stat-val" id="subCounter">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">VIDEOS</div>
+      <div class="stat-val">17</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">EFFORT</div>
+      <div class="stat-val">MAX</div>
+    </div>
+  </div>
+
+  <!-- POKEBALL ROW -->
+  <div class="deco-row">
+    <canvas class="pixel-ball" id="ball1" width="16" height="16"></canvas>
+    <span style="font-family:'VT323';font-size:28px;color:var(--pixel-green);text-shadow:0 0 10px var(--neon-green);">× FA1U IS WILD ×</span>
+    <canvas class="pixel-ball" id="ball2" width="16" height="16" style="animation-direction:reverse;"></canvas>
+  </div>
+
+  <!-- XP BAR -->
+  <div class="xp-section">
+    <div class="xp-label">
+      <span>EXP TOWARDS LEGEND STATUS</span>
+      <span>73 / 100</span>
+    </div>
+    <div class="xp-track">
+      <div class="xp-fill"></div>
+    </div>
+  </div>
+
+  <!-- QUOTE -->
+  <div class="quote-box">
+    <div class="quote-text">
+      "<span class="highlight">IF I TRIED HARDER</span><br>
+      MAYBE I WOULDN'T FAIL"<br>
+      <span style="color:var(--gold);font-size:0.8em;">– BUT HE NEVER FAILS US –</span>
+    </div>
+    <div class="quote-attr">— FA1U, CHANNEL DESCRIPTION —</div>
+  </div>
+
+  <!-- BADGE -->
+  <div class="badge-container">
+    <div class="badge">CERTIFIED CONTENT LEGEND</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    MADE WITH <span>♥</span> FOR FA1U &nbsp;|&nbsp; <span>@FA1U ON YT</span><br><br>
+    <span style="color:#222;font-size:0.8em;">CLICK ANYWHERE FOR CRITS</span>
+  </div>
+
+</div>
+
+<script>
+// ===================== STAR FIELD =====================
+const sf = document.getElementById('starfield');
+for (let i = 0; i < 80; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  s.style.left = Math.random()*100+'vw';
+  s.style.top = Math.random()*100+'vh';
+  s.style.setProperty('--t', (1.5 + Math.random()*3).toFixed(2)+'s');
+  s.style.animationDelay = (Math.random()*3).toFixed(2)+'s';
+  if (Math.random() > 0.7) { s.style.background = '#fff'; s.style.width = s.style.height = '2px'; }
+  sf.appendChild(s);
+}
+
+// ===================== PIXEL POKEBALLS =====================
+function drawPokeball(canvasId, color1='#ff1a00', color2='#fff') {
+  const c = document.getElementById(canvasId);
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const p = [
+    // top half
+    [4,0,8,2,color1],[2,2,12,2,color1],[0,4,16,4,color1],
+    // bottom half
+    [0,8,16,4,color2],[2,12,12,2,color2],[4,14,8,2,color2],
+    // center stripe
+    [0,6,16,2,'#000'],
+    // center button
+    [5,5,6,6,'#555'],[6,6,4,4,'#ccc'],
+    // outline
+  ];
+  ctx.clearRect(0,0,16,16);
+  p.forEach(([x,y,w,h,col]) => { ctx.fillStyle=col; ctx.fillRect(x,y,w,h); });
+}
+drawPokeball('ball1', '#cc2200', '#fff');
+drawPokeball('ball2', '#ff8800', '#fff');
+
+// ===================== SUBSCRIBER COUNTER ANIMATION =====================
+let count = 0, target = 3410;
+const el = document.getElementById('subCounter');
+setTimeout(() => {
+  const step = () => {
+    count = Math.min(count + Math.ceil(target/60), target);
+    el.textContent = count >= 1000 ? (count/1000).toFixed(2)+'K' : count;
+    if (count < target) requestAnimationFrame(step);
+    else el.textContent = '3.41K';
+  };
+  requestAnimationFrame(step);
+}, 800);
+
+// ===================== FA1U PIXEL ART =====================
+const canvas = document.getElementById('fa1uCanvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+// 64x64 pixel art — Fa1u character: boy with headband + Grookey companion, retro style
+// Color palette
+const _ = null; // transparent
+const B = '#000000'; // black outline
+const S = '#8B4513'; // skin/brown
+const T = '#DEB887'; // light skin/tan
+const H = '#3D1A00'; // dark hair
+const D = '#1a0f00'; // darkest
+const G = '#228B22'; // dark green (grookey body)
+const LG = '#4cff4c'; // light green (neon)
+const GR = '#5fba5f'; // mid green
+const R = '#cc2200'; // red
+const W = '#ffffff'; // white
+const Y = '#ffd700'; // gold/yellow
+const OR = '#ff8c00'; // orange
+const C = '#aaaaaa'; // grey cloth
+const DC = '#666666'; // dark cloth
+const SK = '#f5c58a'; // skin color
+const PR = '#cc4400'; // pixel-red dark
+const BG = '#4cff4c'; // bright green bg circle
+
+// 64×64 grid pixel art
+const art = [
+// Row 0
+[_,_,_,_,_,_,_,_,_,_,_,_,_,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 1
+[_,_,_,_,_,_,_,_,_,_,_,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 2
+[_,_,_,_,_,_,_,_,_,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 3
+[_,_,_,_,_,_,_,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 4
+[_,_,_,_,_,_,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 5
+[_,_,_,_,_,B,BG,BG,BG,BG,B,B,B,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 6
+[_,_,_,_,B,BG,BG,BG,B,B,H,H,H,H,H,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 7
+[_,_,_,B,BG,BG,BG,B,H,H,H,H,H,H,H,H,H,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 8
+[_,_,_,B,BG,BG,B,H,H,H,H,H,H,H,H,H,H,H,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 9
+[_,_,B,BG,BG,B,H,H,SK,SK,SK,SK,H,H,SK,SK,H,H,H,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 10
+[_,_,B,BG,B,H,H,SK,SK,SK,SK,SK,H,SK,SK,SK,SK,H,H,H,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 11
+[_,B,BG,BG,B,H,SK,SK,B,B,SK,SK,H,SK,B,B,SK,SK,H,H,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 12
+[_,B,BG,BG,B,H,SK,SK,B,W,B,SK,H,SK,B,W,B,SK,H,H,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 13
+[B,BG,BG,BG,B,H,SK,SK,SK,SK,SK,SK,H,SK,SK,SK,SK,SK,H,H,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 14
+[B,BG,BG,BG,B,H,SK,SK,SK,SK,B,B,B,B,B,SK,SK,SK,H,H,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 15
+[B,BG,BG,BG,B,H,SK,SK,SK,SK,SK,SK,SK,SK,SK,SK,SK,SK,H,H,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 16
+[B,BG,BG,BG,B,H,H,SK,SK,SK,SK,SK,SK,SK,SK,SK,SK,H,H,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 17
+[B,BG,BG,BG,B,B,H,H,H,H,H,H,H,H,H,H,H,H,B,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 18
+[_,B,BG,BG,B,B,B,H,H,B,B,B,B,B,B,H,H,B,B,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 19
+[_,B,BG,BG,BG,B,DC,DC,B,DC,DC,DC,DC,DC,DC,DC,B,DC,DC,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 20
+[_,_,B,BG,BG,B,DC,DC,B,DC,DC,DC,DC,DC,DC,DC,B,DC,DC,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 21
+[_,_,B,BG,BG,B,C,C,B,C,C,C,C,C,C,C,B,C,C,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 22
+[_,_,_,B,BG,BG,B,C,B,C,C,R,R,R,C,C,B,C,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 23
+[_,_,_,B,BG,BG,B,C,B,C,R,Y,Y,Y,R,C,B,C,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 24
+[_,_,_,_,B,BG,BG,B,B,C,R,Y,Y,Y,R,C,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 25
+[_,_,_,_,B,BG,BG,BG,B,C,R,Y,OR,Y,R,C,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 26
+[_,_,_,_,_,B,BG,BG,B,C,C,R,R,R,C,C,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 27
+[_,_,_,_,_,B,BG,BG,BG,B,C,C,C,C,C,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 28
+[_,_,_,_,_,_,B,BG,BG,BG,B,B,B,B,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 29
+[_,_,_,_,_,_,_,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 30
+[_,_,_,_,_,_,_,_,B,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,BG,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Row 31
+[_,_,_,_,_,_,_,_,_,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,B,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+// Rows 32-63: Ground/shadow
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+[_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+];
+
+// Draw the pixel art
+for (let y = 0; y < art.length && y < 64; y++) {
+  for (let x = 0; x < 64; x++) {
+    const color = art[y][x];
+    if (color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+}
+
+// Now draw a cool Grookey-inspired face using canvas drawing (rows 32-63)
+// Big centered Grookey portrait
+function drawGrookey(ctx, ox, oy, scale) {
+  const p = (x,y,w,h,c) => { ctx.fillStyle=c; ctx.fillRect(ox+x*scale, oy+y*scale, w*scale, h*scale); };
+  // Body
+  p(4,8,16,14,'#228B22');
+  // Head
+  p(5,2,14,10,'#5fba5f');
+  // Outline
+  p(4,1,16,1,'#000'); p(3,2,2,10,'#000'); p(19,2,2,10,'#000'); p(4,12,16,1,'#000');
+  // Face
+  p(7,4,4,3,'#f5c58a'); // left eye area
+  p(13,4,4,3,'#f5c58a'); // right eye area
+  p(8,5,2,1,'#000'); p(14,5,2,1,'#000'); // eyes
+  p(9,5,1,1,'#fff'); p(15,5,1,1,'#fff'); // eye shine
+  // Mouth smile
+  p(9,8,6,1,'#000'); p(9,9,1,1,'#000'); p(14,9,1,1,'#000');
+  // Stick on head
+  p(11,0,2,3,'#8B4513'); p(10,0,1,1,'#228B22'); p(13,0,1,1,'#228B22'); p(9,1,1,1,'#228B22');
+  // Arm
+  p(2,10,3,3,'#228B22'); p(19,10,3,3,'#228B22');
+  // Legs
+  p(6,20,4,4,'#228B22'); p(14,20,4,4,'#228B22');
+  // Star sparkle
+  p(0,0,2,1,Y); p(1,1,1,2,Y); p(22,3,2,1,Y); p(21,4,1,2,Y);
+}
+
+drawGrookey(ctx, 20, 32, 1);
+
+// Add "FA1U" text pixel letters on canvas bottom
+ctx.fillStyle = '#cc2200';
+// F
+ctx.fillRect(2,52,6,1); ctx.fillRect(2,53,1,6); ctx.fillRect(2,56,5,1);
+// A
+ctx.fillRect(10,52,4,1); ctx.fillRect(9,53,1,6); ctx.fillRect(14,53,1,6); ctx.fillRect(9,56,6,1);
+// 1
+ctx.fillRect(19,52,1,7);
+// U
+ctx.fillRect(22,52,1,6); ctx.fillRect(27,52,1,6); ctx.fillRect(22,58,6,1);
+
+// Add neon green glow pixels at corners
+ctx.fillStyle = '#39ff14';
+for(let i=0;i<4;i++){ctx.fillRect(i,i,1,1);ctx.fillRect(63-i,i,1,1);ctx.fillRect(i,63-i,1,1);ctx.fillRect(63-i,63-i,1,1);}
+
+// ===================== CLICK EFFECTS =====================
+const hitTexts = ['CRITICAL!', 'COMBO!', 'NICE!', '+100XP', 'GG!', 'SUBS!', 'FA1U!', '★STAR★'];
+document.addEventListener('click', (e) => {
+  const el = document.createElement('div');
+  el.className = 'hit-effect';
+  el.textContent = hitTexts[Math.floor(Math.random()*hitTexts.length)];
+  el.style.left = (e.clientX - 40) + 'px';
+  el.style.top = (e.clientY - 20) + 'px';
+  el.style.color = ['#ffd700','#4cff4c','#ff1a00','#fff'][Math.floor(Math.random()*4)];
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+});
+</script>
+</body>
+</html>
+
+
